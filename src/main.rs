@@ -7,7 +7,7 @@ use clap::{Arg, App};
 fn main() {
 
     // Functionality:
-    //  - by number of files
+    //  - by number of files (max num as an arg)
     //  - by size of files
     //  - by filename??
     //  - by file type
@@ -27,16 +27,24 @@ fn main() {
              .help("The folder whose contents will be arranged into subfolders.")
              .default_value(".")
              .takes_value(true))
+        .arg(Arg::with_name("naming_scheme")
+             .short("n")
+             .long("naming")
+             .value_name("NAME")
+             .help("The name of newly-created subfolders which will be pre-pended to a number.")
+             .default_value("")
+             .takes_value(true))
         .get_matches();
 
     let target_dir = matches.value_of("target").unwrap();
+    let name_scheme = matches.value_of("naming_scheme").unwrap();
 
-    split_by_file_count(target_dir, 3).unwrap();
+    split_by_file_count(target_dir, name_scheme, 990).unwrap();
 
 }
 
 
-fn split_by_file_count(target_dir: &str, max_files: u32) -> std::io::Result<()> {
+fn split_by_file_count(target_dir: &str, name_scheme: &str, max_files: u32) -> std::io::Result<()> {
     if max_files == 0 {
         return Err(Error::new(ErrorKind::Other, "0 is an invalid maximum."));
     }
@@ -53,7 +61,7 @@ fn split_by_file_count(target_dir: &str, max_files: u32) -> std::io::Result<()> 
     let mut new_folder_path = PathBuf::new();
 
     new_folder_path.push(&target_dir);
-    new_folder_path.push(new_folder_count.to_string());
+    new_folder_path.push(format!("{}{}", name_scheme, new_folder_count.to_string()));
     create_dir(new_folder_path.as_path())?;
 
     for c in contents {
@@ -61,7 +69,7 @@ fn split_by_file_count(target_dir: &str, max_files: u32) -> std::io::Result<()> 
             file_count = 0;
             new_folder_count += 1;
             new_folder_path.pop();
-            new_folder_path.push(new_folder_count.to_string());
+            new_folder_path.push(format!("{}{}", name_scheme, new_folder_count.to_string()));
             create_dir(new_folder_path.as_path())?;
         }
         file_count += 1;
