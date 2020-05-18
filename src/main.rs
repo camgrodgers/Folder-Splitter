@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fs::*;
 use std::io::{Error, ErrorKind};
 use std::path::{PathBuf, Path};
@@ -81,6 +82,41 @@ fn main() {
 }
 
 fn split_by_file_ext(target_dir: &str, name_scheme: &str) -> std::io::Result<()> {
+    let contents: Vec<PathBuf> = read_dir(&target_dir)?
+        .filter_map(Result::ok)
+        .map(|c| c.path())
+        .collect();
+    let contents_by_ext: &mut HashMap<&str, Vec<PathBuf>> = &mut HashMap::new();
+    for c in contents.iter().by_ref() {
+        let ext = match c.as_path().extension() {
+            Some(_ext) => _ext.to_str().unwrap(),
+            None => "",
+        };
+        if contents_by_ext.contains_key(ext) {
+            let vec = contents_by_ext.get_mut(ext).unwrap();
+            vec.push(c.clone());
+        } else {
+            let mut vec = Vec::new();
+            vec.push(c.clone());
+            contents_by_ext.insert(ext, vec);
+        }
+
+    }
+    /* NOTE: This code was written to get around a borrow checker error, might delete later
+    for i in 0..contents.len() {
+        let ext = match contents[i].as_path().extension() {
+            Some(_ext) => _ext.to_str().unwrap(),
+            None => "",
+        };
+        if contents_by_ext.contains_key(ext) {
+            let vec = contents_by_ext.get_mut(ext).unwrap();
+            vec.push(contents[i].clone());
+        } else {
+            let mut vec = Vec::new();
+            vec.push(contents[i].clone());
+            contents_by_ext.insert(ext, vec);
+        }
+    }*/
 
 
     Ok(())
@@ -95,7 +131,7 @@ fn split_by_file_count(target_dir: &str, name_scheme: &str, max_files: u32) -> s
         .filter_map(Result::ok)
         .map(|c| c.path())
         .collect();
-    contents.sort();
+    contents.sort_unstable();
     let contents = contents;
 
     let mut file_count: u32 = 0;
