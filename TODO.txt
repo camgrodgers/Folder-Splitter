@@ -1,0 +1,21 @@
+- write tests
+- split functions out into a module? 
+- write ReadMe.md
+- Gui?
+
+Remaining functionality:
+	- by size of files
+    - by size of files
+    - by filename??
+    - by date
+
+Remaining options:
+    - ignore directories
+    - copy instead of move
+    - zip compression?
+    - recursive?
+
+Errors:
+	- crashes if there are already folders named '0' '1' etc
+
+

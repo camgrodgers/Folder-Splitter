@@ -6,23 +6,6 @@ use clap::{Arg, App, SubCommand};
 
 
 fn main() {
-
-    // Functionality:
-    //  - by number of files (max num as an arg)
-    //      - args: target, naming scheme, 
-    //  - by size of files
-    //  - by filename??
-    //  - by file type
-    //  - by date
-    //
-    // Options:
-    //  - ignore directories?
-    //  - copy instead of move
-    //  - zip compression?
-    //  - recursive?
-    //
-    // Errors:
-    //  - crashes if there are already folders named '0' '1' etc
     let matches = App::new("FolderSplitter")
         .version("0.1")
         .author("Cameron Rodgers")
@@ -62,6 +45,9 @@ fn main() {
              .help("The name of newly-created subfolders which will be pre-pended to a number or extension.")
              .default_value("")
              .takes_value(true))
+        .arg(Arg::with_name("ignore_dirs")
+             .long("ignore_dirs")
+             .help("Do not move directories into newly-created subdirectories."))
         .get_matches();
 
     let target_dir = matches.value_of("folder_target").unwrap();
@@ -78,6 +64,8 @@ fn main() {
         };
 
         split_by_file_count(target_dir, name_scheme, max_files).unwrap();
+    } else if matches.is_present("byfileext") {
+        split_by_file_ext(target_dir, name_scheme).unwrap();
     }
 }
 
@@ -86,10 +74,10 @@ fn split_by_file_ext(target_dir: &str, name_scheme: &str) -> std::io::Result<()>
         .filter_map(Result::ok)
         .map(|c| c.path())
         .collect();
-    let contents_by_ext: &mut HashMap<&str, Vec<PathBuf>> = &mut HashMap::new();
-    for c in contents.iter().by_ref() {
+    let mut contents_by_ext: HashMap<&str, Vec<PathBuf>> = HashMap::new();
+    for c in contents.iter() {
         let ext = match c.as_path().extension() {
-            Some(_ext) => _ext.to_str().unwrap(),
+            Some(ext) => ext.to_str().unwrap(),
             None => "",
         };
         if contents_by_ext.contains_key(ext) {
@@ -100,24 +88,21 @@ fn split_by_file_ext(target_dir: &str, name_scheme: &str) -> std::io::Result<()>
             vec.push(c.clone());
             contents_by_ext.insert(ext, vec);
         }
-
     }
-    /* NOTE: This code was written to get around a borrow checker error, might delete later
-    for i in 0..contents.len() {
-        let ext = match contents[i].as_path().extension() {
-            Some(_ext) => _ext.to_str().unwrap(),
-            None => "",
-        };
-        if contents_by_ext.contains_key(ext) {
-            let vec = contents_by_ext.get_mut(ext).unwrap();
-            vec.push(contents[i].clone());
-        } else {
-            let mut vec = Vec::new();
-            vec.push(contents[i].clone());
-            contents_by_ext.insert(ext, vec);
-        }
-    }*/
 
+    let mut new_folder_path = PathBuf::new();
+    new_folder_path.push(&target_dir);
+
+    for (ext, vec) in contents_by_ext {
+        new_folder_path.push(format!("{}_{}", name_scheme, ext));
+        create_dir(new_folder_path.as_path())?;
+        for file in vec {
+            let mut new_file_path = new_folder_path.clone();
+            new_file_path.push(Path::new(&file.file_name().unwrap()));
+            rename(file, new_file_path)?;
+        }
+        new_folder_path.pop();
+    }
 
     Ok(())
 }
@@ -131,8 +116,12 @@ fn split_by_file_count(target_dir: &str, name_scheme: &str, max_files: u32) -> s
         .filter_map(Result::ok)
         .map(|c| c.path())
         .collect();
+
+    if contents.len() <= max_files as usize {
+        return Err(Error::new(ErrorKind::Other, "Folder already contains less than or equal to the specified maximum of files."));
+    }
+
     contents.sort_unstable();
-    let contents = contents;
 
     let mut file_count: u32 = 0;
     let mut new_folder_count: u32 = 0;
