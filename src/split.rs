@@ -3,6 +3,11 @@ use std::fs::*;
 use std::io::{Error, ErrorKind};
 use std::path::{PathBuf, Path};
 
+enum SplitMode {
+    Copy,
+    Move
+}
+
 pub fn split_by_file_ext(target_dir: &str, name_scheme: &str) -> std::io::Result<()> {
     let contents: Vec<PathBuf> = read_dir(&target_dir)?
         .filter_map(Result::ok)

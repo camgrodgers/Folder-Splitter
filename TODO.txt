@@ -1,6 +1,8 @@
+- license
 - write tests
 - split functions out into a module? 
 - write ReadMe.md
+- documentation in comments?
 - Gui?
 
 Remaining functionality:
