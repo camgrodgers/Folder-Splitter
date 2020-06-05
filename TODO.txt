@@ -1,23 +1,20 @@
-- license
 - write tests
-- split functions out into a module? 
+	- Especially test filesize stuff
 - write ReadMe.md
 - documentation in comments?
 - Gui?
 
 Remaining functionality:
-	- by size of files
-    - by size of files
-    - by filename??
     - by date
 
 Remaining options:
     - ignore directories
     - copy instead of move
     - zip compression?
-    - recursive?
+	- multiple measurements of bytes for filesize arg
 
 Errors:
 	- crashes if there are already folders named '0' '1' etc
+	- handle deliberate errors instead of unwrap
 
 

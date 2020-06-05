@@ -1,6 +1,22 @@
+/*
+*  This program splits folders up into subfolders in a variety of ways.
+*  Copyright (C) 2020  Cameron Rodgers
+
+*  This program is free software: you can redistribute it and/or modify
+*  it under the terms of the GNU Affero General Public License as
+*  published by the Free Software Foundation, either version 3 of the
+*  License, or (at your option) any later version.
+
+*  This program is distributed in the hope that it will be useful,
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+*  GNU Affero General Public License for more details.
+
+*  You should have received a copy of the GNU Affero General Public License
+*  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 mod split;
-//use split::*;
-use clap::{Arg, App, SubCommand};
+use clap::{App, Arg, SubCommand};
 
 fn main() {
     let matches = App::new("FolderSplitter")
@@ -16,6 +32,18 @@ fn main() {
                          .required(true)))
         .subcommand(SubCommand::with_name("byfileext")
                     .about("Split folder contents into subfolders based on file extension."))
+        .subcommand(SubCommand::with_name("byfilesize")
+                    .about("Split folder contents into subfolders with a maximum folder size non-recursively.")
+                    .arg(Arg::with_name("max_size")
+                         .value_name("MAXSIZE")
+                         .help("The maximum total size of all the files in a folder, non-recursive.")
+                         .takes_value(true)
+                         .required(true))
+                    .arg(Arg::with_name("unit")
+                         .value_name("DATAUNIT")
+                         .help("The unit of measurement of the file size. 'b', 'kb', 'mb', 'gb', or 'tb'.")
+                         .default_value("b")
+                         .takes_value(true)))
         .subcommand(SubCommand::with_name("bydate")
                     .about("Split folder contents into subfolders based on date.")
                     .arg(Arg::with_name("date_type")
@@ -63,6 +91,22 @@ fn main() {
         split::split_by_file_count(target_dir, name_scheme, max_files).unwrap();
     } else if matches.is_present("byfileext") {
         split::split_by_file_ext(target_dir, name_scheme).unwrap();
+    } else if matches.is_present("byfilesize") {
+        let max_filesize_str = matches.value_of("max_files").unwrap();
+        let max_filesize = match max_filesize_str.parse::<u64>() {
+            Ok(x) => x,
+            Err(_) => {
+                println!("Invalid number passed into max_filesize.");
+                return;
+            }
+        };
+
+        split::split_by_file_size(
+            target_dir,
+            name_scheme,
+            max_filesize,
+            split::SplitMode::Move,
+        )
+        .unwrap();
     }
 }
-
