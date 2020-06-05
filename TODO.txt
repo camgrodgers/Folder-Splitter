@@ -1,5 +1,6 @@
 - write tests
 	- Especially test filesize stuff
+	- test copy
 - write ReadMe.md
 - documentation in comments?
 - Gui?
@@ -9,7 +10,6 @@ Remaining functionality:
 
 Remaining options:
     - ignore directories
-    - copy instead of move
     - zip compression?
 	- multiple measurements of bytes for filesize arg
 

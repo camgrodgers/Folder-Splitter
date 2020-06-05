@@ -39,9 +39,7 @@ pub fn split_by_file_size(
 
     // Check for files larger than maximum and return error if so
     for c in contents.iter() {
-        let mut path = PathBuf::new();
-        path.push(c);
-        let metadata = metadata(path)?;
+        let metadata = metadata(c)?;
         if metadata.len() > max_file_size {
             return Err(Error::new(
                 ErrorKind::Other,
@@ -59,13 +57,9 @@ pub fn split_by_file_size(
     create_dir(new_folder_path.as_path())?;
 
     for c in contents.iter() {
-        let mut filepath = PathBuf::new();
-        filepath.push(target_dir);
-        filepath.push(c);
-        let metadata = metadata(filepath)?;
-        let file_len = metadata.len();
+        let file_len = metadata(c)?.len();
 
-        if file_len + curr_folder_size >= max_file_size {
+        if (file_len + curr_folder_size) > max_file_size {
             curr_folder_size = 0;
             new_folder_count += 1;
             new_folder_path.pop();
@@ -76,13 +70,20 @@ pub fn split_by_file_size(
 
         let mut new_file_path = new_folder_path.clone();
         new_file_path.push(Path::new(&c.file_name().unwrap()));
-        rename(c, new_file_path)?;
+        match &mode {
+            SplitMode::Move => {
+                rename(c, new_file_path)?;
+            },
+            SplitMode::Copy => {
+                copy(c, new_file_path)?;
+            },
+        }
     }
 
     Ok(())
 }
 
-pub fn split_by_file_ext(target_dir: &str, name_scheme: &str) -> std::io::Result<()> {
+pub fn split_by_file_ext(target_dir: &str, name_scheme: &str, mode: SplitMode) -> std::io::Result<()> {
     let contents: Vec<PathBuf> = read_dir(&target_dir)?
         .filter_map(Result::ok)
         .map(|c| c.path())
@@ -112,7 +113,14 @@ pub fn split_by_file_ext(target_dir: &str, name_scheme: &str) -> std::io::Result
         for file in vec {
             let mut new_file_path = new_folder_path.clone();
             new_file_path.push(Path::new(&file.file_name().unwrap()));
-            rename(file, new_file_path)?;
+            match &mode {
+                SplitMode::Move => {
+                    rename(file, new_file_path)?;
+                },
+                SplitMode::Copy => {
+                    copy(file, new_file_path)?;
+                },
+            }
         }
         new_folder_path.pop();
     }
@@ -124,6 +132,7 @@ pub fn split_by_file_count(
     target_dir: &str,
     name_scheme: &str,
     max_files: u32,
+    mode: SplitMode
 ) -> std::io::Result<()> {
     if max_files == 0 {
         return Err(Error::new(ErrorKind::Other, "0 is an invalid maximum."));
@@ -163,7 +172,14 @@ pub fn split_by_file_count(
 
         let mut new_file_path = new_folder_path.clone();
         new_file_path.push(Path::new(&c.file_name().unwrap()));
-        rename(c, new_file_path)?;
+        match &mode {
+            SplitMode::Move => {
+                rename(c, new_file_path)?;
+            },
+            SplitMode::Copy => {
+                copy(c, new_file_path)?;
+            },
+        }
     }
 
     Ok(())

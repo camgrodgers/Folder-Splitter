@@ -63,6 +63,13 @@ fn main() {
              .help("The folder whose contents will be arranged into subfolders.")
              .required(true)
              .takes_value(true))
+        .arg(Arg::with_name("split_mode")
+             .short("s")
+             .long("mode")
+             .value_name("COPYORMOVE")
+             .help("Specify to 'move' folder contents or 'copy'.")
+             .required(true)
+             .takes_value(true))
         .arg(Arg::with_name("naming_scheme")
              .short("n")
              .long("naming")
@@ -77,6 +84,15 @@ fn main() {
 
     let target_dir = matches.value_of("folder_target").unwrap();
     let name_scheme = matches.value_of("naming_scheme").unwrap();
+    let split_mode = matches.value_of("split_mode").unwrap();
+    let split_mode = match split_mode.to_lowercase().as_str() {
+        "move" => split::SplitMode::Move,
+        "copy" => split::SplitMode::Copy,
+        _ => { 
+            println!("Error: incorrect split mode specified."); 
+            return;
+        }
+    };
 
     if let Some(matches) = matches.subcommand_matches("byfilecount") {
         let max_files_str = matches.value_of("max_files").unwrap();
@@ -88,9 +104,9 @@ fn main() {
             }
         };
 
-        split::split_by_file_count(target_dir, name_scheme, max_files).unwrap();
+        split::split_by_file_count(target_dir, name_scheme, max_files, split_mode).unwrap();
     } else if matches.is_present("byfileext") {
-        split::split_by_file_ext(target_dir, name_scheme).unwrap();
+        split::split_by_file_ext(target_dir, name_scheme, split_mode).unwrap();
     } else if matches.is_present("byfilesize") {
         let max_filesize_str = matches.value_of("max_files").unwrap();
         let max_filesize = match max_filesize_str.parse::<u64>() {
@@ -105,7 +121,7 @@ fn main() {
             target_dir,
             name_scheme,
             max_filesize,
-            split::SplitMode::Move,
+            split_mode,
         )
         .unwrap();
     }
